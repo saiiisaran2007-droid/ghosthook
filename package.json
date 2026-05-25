@@ -1,0 +1,20 @@
+{
+  "name": "ghosthook",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.6",
+    "cores": "^0.8.5",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1"
+  }
+}
