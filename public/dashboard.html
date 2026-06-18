@@ -1,622 +1,1330 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>GHOST HOOK — Dashboard</title>
+  <meta charset="UTF-8">
+  <title>GhostHook — Attribution Platform</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      background: #0A1628;
-      color: #CBD5E1;
-      font-family: Calibri, Arial, sans-serif;
-      padding: 24px;
+    /* ── RESET & BASE ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #0b0f19;
+      --bg-surface:   #111827;
+      --bg-elevated:  #161d2e;
+      --border:       #1f2d45;
+      --border-light: #263347;
+      --cyan:         #00c8e0;
+      --cyan-dim:     rgba(0,200,224,0.12);
+      --cyan-glow:    rgba(0,200,224,0.25);
+      --red:          #f04a4a;
+      --red-dim:      rgba(240,74,74,0.12);
+      --green:        #34d399;
+      --green-dim:    rgba(52,211,153,0.1);
+      --amber:        #f59e0b;
+      --amber-dim:    rgba(245,158,11,0.1);
+      --text-primary: #e2e8f0;
+      --text-secondary:#8b9eb8;
+      --text-muted:   #4a6080;
+      --font-ui:      'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+      --radius-sm:    5px;
+      --radius-md:    8px;
+      --radius-lg:    12px;
     }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* ── LAYOUT ──────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ── TOPBAR ──────────────────────────────────────── */
     .topbar {
+      flex-shrink: 0;
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid #1E3A6E;
+      padding: 0 20px;
     }
-    .logo { color: #2563EB; font-size: 22px; font-weight: bold; }
-    .logo span { color: white; }
-    .team { color: #64748B; font-size: 12px; text-align: right; }
-    .btn-primary {
-      background: #2563EB; color: white;
-      border: none; padding: 12px 24px;
-      font-size: 14px; font-weight: bold;
-      cursor: pointer; margin-right: 8px;
-    }
-    .btn-secondary {
-      background: #0F2040; color: #2563EB;
-      border: 1px solid #2563EB;
-      padding: 12px 24px;
-      font-size: 14px; font-weight: bold;
-      cursor: pointer; margin-right: 8px;
-    }
-    .btn-small {
-      background: #2563EB; color: white;
-      border: none; padding: 6px 14px;
-      font-size: 12px; font-weight: bold;
-      cursor: pointer;
-    }
-    .bait-box {
-      background: #0F2040;
-      border: 1px solid #22C55E;
-      border-left: 4px solid #22C55E;
-      padding: 14px 18px;
-      margin: 16px 0;
-      display: none;
-    }
-    .bait-label {
-      color: #22C55E; font-size: 11px;
-      font-weight: bold; letter-spacing: 2px;
-      margin-bottom: 6px;
-    }
-    .bait-url {
-      font-family: monospace; color: #3B82F6;
-      font-size: 13px; word-break: break-all;
-    }
-    .bait-hint {
-      color: #64748B; font-size: 11px; margin-top: 6px;
-    }
-    .status-bar {
-      background: #0F2040;
-      border: 1px solid #1E3A6E;
-      padding: 10px 16px;
-      margin: 12px 0;
-      font-size: 12px;
+
+    .logo {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
-    .dot {
-      width: 8px; height: 8px;
+    .logo-mark {
+      width: 26px; height: 26px;
+      background: var(--cyan);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark svg { width: 14px; height: 14px; }
+    .logo-name {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--text-primary);
+    }
+    .logo-name span {
+      color: var(--cyan);
+      font-weight: 400;
+      font-size: 11px;
+      margin-left: 6px;
+      letter-spacing: 0.08em;
+    }
+    .logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-top: 1px;
+    }
+
+    .topbar-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
       border-radius: 50%;
-      background: #22C55E;
-      animation: pulse 1.5s infinite;
+      background: var(--cyan);
+      animation: livepulse 2s infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.3; }
+    @keyframes livepulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--cyan-glow); }
+      50%       { opacity: 0.6; box-shadow: 0 0 0 5px transparent; }
     }
-    .trigger-card {
-      background: #0F2040;
-      border: 1px solid #1E3A6E;
-      border-left: 4px solid #EF4444;
-      padding: 20px;
-      margin: 14px 0;
-      animation: slideIn 0.3s ease;
+    .live-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: #07101a;
+    }
+    .btn-primary:hover { background: #00e0fc; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+    }
+    .btn-ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* ── BODY GRID ───────────────────────────────────── */
+    .body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR LEFT ─────────────────────────────────── */
+    .sidebar-left {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-section {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Metrics */
+    .metrics { display: flex; flex-direction: column; gap: 6px; }
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .metric-key { font-size: 11px; color: var(--text-secondary); }
+    .metric-val {
+      font-size: 16px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+    .metric-val.cyan { color: var(--cyan); }
+    .metric-val.red  { color: var(--red); }
+
+    /* Bait list */
+    .bait-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+    }
+    .bait-list::-webkit-scrollbar { width: 4px; }
+    .bait-list::-webkit-scrollbar-track { background: transparent; }
+    .bait-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+    .bait-item {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .bait-item:hover { border-color: var(--border-light); }
+    .bait-item.active { border-color: var(--cyan); }
+
+    .bait-item-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .bait-token {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--cyan);
+    }
+    .bait-status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: livepulse 2s infinite;
+    }
+    .bait-url-preview {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-mono);
+    }
+    .bait-age {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .bait-empty {
+      padding: 20px 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    /* ── CENTER PANEL ────────────────────────────────── */
+    .center {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .panel-meta { font-size: 11px; color: var(--text-muted); }
+
+    /* Map */
+    .map-container {
+      height: 220px;
+      flex-shrink: 0;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+    #main-map { width: 100%; height: 100%; }
+    .map-overlay {
+      position: absolute;
+      top: 8px; left: 8px;
+      z-index: 999;
+      display: flex; gap: 6px;
+    }
+    .map-badge {
+      background: rgba(11,15,25,0.85);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      display: flex; align-items: center; gap: 5px;
+      backdrop-filter: blur(4px);
+    }
+    .map-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* Trigger log */
+    .trigger-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+    }
+    .trigger-log::-webkit-scrollbar { width: 4px; }
+    .trigger-log::-webkit-scrollbar-track { background: transparent; }
+    .trigger-log::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+    .trigger-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      animation: slideIn 0.25s ease;
     }
     @keyframes slideIn {
-      from { opacity:0; transform:translateY(-10px); }
-      to   { opacity:1; transform:translateY(0); }
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .trigger-header {
+    .trigger-row:hover { background: var(--bg-surface); border-color: var(--border-light); }
+    .trigger-row.selected { border-color: var(--cyan); }
+    .trigger-row.risk-high { border-left: 2px solid var(--red); }
+    .trigger-row.risk-med  { border-left: 2px solid var(--cyan); }
+    .trigger-row.risk-low  { border-left: 2px solid var(--text-muted); }
+
+    .trigger-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .trigger-icon svg { width: 14px; height: 14px; }
+
+    .trigger-main { min-width: 0; }
+    .trigger-ip {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+    .trigger-detail {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .risk-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .risk-high { background: var(--red-dim);   color: var(--red);   }
+    .risk-med  { background: var(--cyan-dim);  color: var(--cyan);  }
+    .risk-low  { background: rgba(139,158,184,0.1); color: var(--text-secondary); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+    .empty-state svg { opacity: 0.2; width: 36px; height: 36px; }
+    .empty-state p { font-size: 13px; }
+    .empty-state small { font-size: 11px; opacity: 0.7; }
+
+    /* ── SIDEBAR RIGHT ───────────────────────────────── */
+    .sidebar-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .detail-scroll::-webkit-scrollbar { width: 4px; }
+    .detail-scroll::-webkit-scrollbar-track { background: transparent; }
+    .detail-scroll::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+    .detail-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .detail-card-header {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .detail-card-header svg { width: 12px; height: 12px; opacity: 0.6; }
+
+    .detail-rows { padding: 4px 0; }
+    .detail-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .trigger-title {
-      color: #EF4444;
-      font-size: 13px;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-    .trigger-time { color: #64748B; font-size: 12px; }
-    .isp-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: #1E3A6E;
-      border: 1px solid #1E3A6E;
-      margin-bottom: 14px;
-    }
-    .isp-cell { background: #0A1628; padding: 10px 14px; }
-    .isp-cell-label {
-      color: #64748B; font-size: 10px;
-      letter-spacing: 1px; margin-bottom: 4px;
-    }
-    .isp-cell-value {
-      color: white; font-size: 13px; font-weight: bold;
-    }
-    .data-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      align-items: baseline;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
       gap: 8px;
-      margin-bottom: 14px;
     }
-    .data-row {
-      display: flex; gap: 10px;
-      padding: 6px 0;
-      border-bottom: 1px solid #1E2A3A;
+    .detail-row:last-child { border-bottom: none; }
+    .detail-key {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
     }
-    .data-label {
-      color: #64748B; font-size: 11px;
-      width: 110px; flex-shrink: 0;
+    .detail-val {
+      font-size: 11px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      text-align: right;
+      word-break: break-all;
     }
-    .data-value {
-      color: white; font-size: 12px; font-weight: bold;
+    .detail-val.cyan { color: var(--cyan); }
+    .detail-val.red  { color: var(--red); }
+    .detail-val.green { color: var(--green); }
+
+    /* AI Brief */
+    .ai-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
     }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      font-size: 10px; font-weight: bold;
-      margin-left: 6px;
-    }
-    .badge-red   { background: #EF4444; color: white; }
-    .badge-green { background: #22C55E; color: white; }
-    .badge-gold  { background: #F59E0B; color: white; }
-    .map-wrap {
-      margin: 16px 0 14px 0;
-      border: 1px solid #1E3A6E;
-    }
-    .map-title {
-      background: #0A1628;
-      border-bottom: 1px solid #1E3A6E;
-      padding: 8px 14px;
+    .ai-card-header {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
       font-size: 10px;
-      color: #64748B;
-      letter-spacing: 2px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       display: flex;
-      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
     }
-    .map-legend-item {
+    .ai-label {
       display: flex; align-items: center; gap: 6px;
     }
-    .legend-dot {
-      width: 10px; height: 10px;
+    .ai-indicator {
+      width: 6px; height: 6px;
       border-radius: 50%;
+      background: var(--cyan);
     }
-    .map-box { width: 100%; height: 300px; }
-    .empty {
-      text-align: center; padding: 60px; color: #64748B;
+    .ai-body {
+      padding: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.75;
     }
-    .empty h3 { font-size: 18px; margin-bottom: 8px; }
+    .ai-body strong { color: var(--text-primary); font-weight: 500; }
+    .ai-tags {
+      display: flex; flex-wrap: wrap; gap: 5px;
+      padding: 0 12px 12px;
+    }
+    .ai-tag {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+    }
+    .ai-loading {
+      padding: 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .ai-spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-light);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ai-placeholder {
+      padding: 16px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* Export btn */
+    .export-btn {
+      margin: 0 14px 14px;
+      width: calc(100% - 28px);
+      padding: 9px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.15s;
+    }
+    .export-btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .export-btn svg { width: 13px; height: 13px; }
+
+    /* ── ALERT FLASH ─────────────────────────────────── */
+    .alert-flash {
+      position: fixed;
+      top: 60px; right: 16px;
+      z-index: 9999;
+      background: var(--bg-surface);
+      border: 1px solid var(--red);
+      border-left: 3px solid var(--red);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      max-width: 280px;
+      display: none;
+      animation: flashIn 0.2s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    @keyframes flashIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .alert-flash.show { display: block; }
+    .alert-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+    .alert-body { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+    /* ── STATUS BAR ──────────────────────────────────── */
+    .statusbar {
+      flex-shrink: 0;
+      height: 24px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 16px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+    .statusbar-item { display: flex; align-items: center; gap: 5px; }
+    .statusbar-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+    /* ── LEAFLET OVERRIDES ───────────────────────────── */
+    .leaflet-container { background: #0d1520 !important; }
+    .leaflet-tile { filter: brightness(0.7) saturate(0.4); }
+    .leaflet-control-attribution { display: none; }
+    .leaflet-control-zoom a {
+      background: var(--bg-surface) !important;
+      color: var(--text-secondary) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-surface) !important;
+      border: 1px solid var(--border-light) !important;
+      border-radius: var(--radius-sm) !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip { background: var(--bg-surface) !important; }
+    .leaflet-popup-content {
+      color: var(--text-primary) !important;
+      font-family: var(--font-ui) !important;
+      font-size: 12px !important;
+      margin: 10px 14px !important;
+      line-height: 1.7 !important;
+    }
+
+    /* ── SCROLLBAR ───────────────────────────────────── */
+    * { scrollbar-width: thin; scrollbar-color: var(--border-light) transparent; }
   </style>
 </head>
 <body>
+<div class="app">
 
-<div class="topbar">
-  <div>
-    <div class="logo"><span>GHOST</span> HOOK</div>
-    <div style="color:#64748B;font-size:12px;margin-top:4px">
-      Remote Suspect Attribution System
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#07101a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5" fill="#07101a" stroke="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">GhostHook <span>V2</span></div>
+        <div class="logo-sub">Remote Attribution Platform</div>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="live-dot" id="conn-dot" style="background:var(--text-muted)"></div>
+      <span class="live-label" id="conn-label">Connecting...</span>
+    </div>
+
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="loadTriggers()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Refresh
+      </button>
+      <button class="btn btn-primary" onclick="generateBait()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New bait
+      </button>
     </div>
   </div>
-  <div class="team">
-    Team CyberGhost<br>
-    Sai Saran B · Shashank S · Shrivatsan<br>
-    Cyber Hackathon v4 — Track 4
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SIDEBAR LEFT -->
+    <div class="sidebar-left">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-key">Active baits</span>
+            <span class="metric-val cyan" id="m-baits">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-key">Total triggers</span>
+            <span class="metric-val" id="m-triggers">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-key">High risk</span>
+            <span class="metric-val red" id="m-highrisk">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="border-bottom: none;">
+        <div class="sidebar-label">Bait assets</div>
+      </div>
+      <div class="bait-list" id="bait-list">
+        <div class="bait-empty">No active baits.<br>Generate one to begin.</div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center">
+      <div class="panel-header">
+        <span class="panel-title">Attribution map</span>
+        <span class="panel-meta" id="map-meta">No data</span>
+      </div>
+
+      <div class="map-container">
+        <div id="main-map"></div>
+        <div class="map-overlay">
+          <div class="map-badge">
+            <div class="map-badge-dot" style="background:var(--red)"></div>
+            IP location
+          </div>
+          <div class="map-badge">
+            <div class="map-badge-dot" style="background:var(--cyan)"></div>
+            GPS location
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-header">
+        <span class="panel-title">Trigger log</span>
+        <span class="panel-meta" id="trigger-count-label">0 events</span>
+      </div>
+
+      <div class="trigger-log" id="trigger-log">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+          </svg>
+          <p>No triggers yet</p>
+          <small>Generate a bait and send it to the target</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR RIGHT -->
+    <div class="sidebar-right">
+      <div class="panel-header">
+        <span class="panel-title">Suspect detail</span>
+        <span class="panel-meta" id="detail-label">—</span>
+      </div>
+
+      <div class="detail-scroll" id="detail-panel">
+        <div class="empty-state" style="height:200px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <p>Select a trigger</p>
+          <small>Details appear here</small>
+        </div>
+      </div>
+
+      <button class="export-btn" id="export-btn" onclick="exportPDF()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </svg>
+        Export PDF case file
+      </button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <div class="statusbar-item">
+      <div class="statusbar-dot" id="sb-dot" style="background:var(--text-muted)"></div>
+      <span id="sb-text">Offline</span>
+    </div>
+    <div class="statusbar-item">
+      <span id="sb-time">—</span>
+    </div>
+    <div class="statusbar-item" style="margin-left:auto">
+      <span>GhostHook V2</span>
+    </div>
   </div>
 </div>
 
-<div>
-  <button class="btn-primary" onclick="generateBait()">
-    + Generate Bait Asset
-  </button>
-  <button class="btn-secondary" onclick="loadTriggers()">
-    ↻ Refresh
-  </button>
-</div>
-
-<div class="bait-box" id="bait-box">
-  <div class="bait-label">⬤ BAIT ASSET ACTIVE — MONITORING</div>
-  <div class="bait-url" id="bait-url"></div>
-  <div class="bait-hint">
-    Send this URL to the suspect.
-    Dashboard will alert the moment it is opened.
-  </div>
-</div>
-
-<div class="status-bar">
-  <div class="dot"></div>
-  <span id="status-text">System online — waiting for trigger</span>
-</div>
-
-<div id="triggers-container">
-  <div class="empty">
-    <h3>No triggers yet</h3>
-    <p>Generate a bait asset and send it to the suspect</p>
-  </div>
+<!-- ALERT FLASH -->
+<div class="alert-flash" id="alert-flash">
+  <div class="alert-title">⚠ Bait triggered</div>
+  <div class="alert-body" id="alert-body">—</div>
 </div>
 
 <script>
-// ── WEBSOCKET ─────────────────────────────────────────
+/* ── STATE ─────────────────────────────────────────── */
+let allTriggers   = [];
+let activeBaits   = [];
+let selectedId    = null;
+let mainMap       = null;
+let mapInitDone   = false;
+
+/* ── SOCKET ────────────────────────────────────────── */
 const socket = io();
 
 socket.on('connect', () => {
-  document.getElementById('status-text').textContent =
-    'Live connection established — monitoring active';
+  setConn(true);
+});
+socket.on('disconnect', () => {
+  setConn(false);
 });
 
 socket.on('new_trigger', (data) => {
-  document.getElementById('status-text').textContent =
-    '⚠ BAIT TRIGGERED — ' + data.timestamp;
-  const bar = document.querySelector('.status-bar');
-  bar.style.borderColor = '#EF4444';
-  bar.style.background  = '#1A0A0A';
-  setTimeout(() => {
-    bar.style.borderColor = '#1E3A6E';
-    bar.style.background  = '#0F2040';
-  }, 3000);
-  prependTriggerCard(data);
+  allTriggers.unshift(data);
+  renderTriggerLog();
+  updateMetrics();
+  showAlert(data);
+  if (!selectedId) selectTrigger(data);
 });
 
-socket.on('webrtc_update', (data) => {
-  setTimeout(() => loadTriggers(), 500);
+socket.on('webrtc_update', () => {
+  setTimeout(loadTriggers, 600);
 });
 
-// ── GENERATE BAIT ─────────────────────────────────────
+function setConn(online) {
+  const dot   = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  const sbdot = document.getElementById('sb-dot');
+  const sbtext = document.getElementById('sb-text');
+  if (online) {
+    dot.style.background   = 'var(--cyan)';
+    label.textContent      = 'Live — monitoring active';
+    sbdot.style.background = 'var(--green)';
+    sbtext.textContent     = 'Connected';
+  } else {
+    dot.style.background   = 'var(--red)';
+    label.textContent      = 'Disconnected';
+    sbdot.style.background = 'var(--red)';
+    sbtext.textContent     = 'Connection lost';
+  }
+}
+
+/* ── CLOCK ─────────────────────────────────────────── */
+setInterval(() => {
+  document.getElementById('sb-time').textContent =
+    new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST';
+}, 1000);
+
+/* ── GENERATE BAIT ─────────────────────────────────── */
 async function generateBait() {
   const res  = await fetch('/api/generate');
   const data = await res.json();
-  const box  = document.getElementById('bait-box');
-  document.getElementById('bait-url').innerHTML =
-    `<a href="${data.url}" target="_blank"
-       style="color:#3B82F6">${data.url}</a>`;
-  box.style.display = 'block';
-  document.getElementById('status-text').textContent =
-    'Bait active — token: ' + data.token.substring(0,8) +
-    '... — waiting for trigger';
+
+  const bait = {
+    token:     data.token,
+    url:       data.url,
+    short:     data.token.substring(0,8),
+    createdAt: Date.now()
+  };
+  activeBaits.unshift(bait);
+  renderBaitList();
+  updateMetrics();
+
+  // Copy to clipboard silently
+  try { await navigator.clipboard.writeText(data.url); } catch(e) {}
+
+  showAlert({ http_ip: 'Bait ready', isp: data.url, city: 'Copied to clipboard', country: '' }, false);
 }
 
-// ── LOAD TRIGGERS ─────────────────────────────────────
-async function loadTriggers() {
-  const res      = await fetch('/api/triggers');
-  const triggers = await res.json();
-  const container = document.getElementById('triggers-container');
+/* ── BAIT LIST ─────────────────────────────────────── */
+function renderBaitList() {
+  const el = document.getElementById('bait-list');
+  if (!activeBaits.length) {
+    el.innerHTML = '<div class="bait-empty">No active baits.<br>Generate one to begin.</div>';
+    return;
+  }
+  el.innerHTML = activeBaits.map((b, i) => `
+    <div class="bait-item ${i === 0 ? 'active' : ''}" title="${b.url}">
+      <div class="bait-item-header">
+        <span class="bait-token">${b.short}…</span>
+        <div class="bait-status-dot"></div>
+      </div>
+      <div class="bait-url-preview">${b.url.replace('https://', '')}</div>
+      <div class="bait-age">${timeSince(b.createdAt)}</div>
+    </div>
+  `).join('');
+}
 
-  if (!triggers || triggers.length === 0) {
-    container.innerHTML = `
-      <div class="empty">
-        <h3>No triggers yet</h3>
-        <p>Generate a bait asset and send it to the suspect</p>
+function timeSince(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60)  return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  return `${Math.floor(s/3600)}h ago`;
+}
+
+/* ── LOAD TRIGGERS ─────────────────────────────────── */
+async function loadTriggers() {
+  const res = await fetch('/api/triggers');
+  allTriggers = await res.json() || [];
+  renderTriggerLog();
+  updateMetrics();
+  if (allTriggers.length && !selectedId) selectTrigger(allTriggers[0]);
+}
+
+/* ── RISK SCORE ─────────────────────────────────────── */
+function riskScore(t) {
+  let score = 0;
+  if (t.vpn_flag === 'YES') score += 3;
+  const hour = new Date(t.timestamp).getHours();
+  if (hour >= 0 && hour < 6) score += 2;
+  if (t.webrtc_ip && t.webrtc_ip !== 'collecting...' &&
+      t.http_ip && t.webrtc_ip !== t.http_ip) score += 2;
+  return score;
+}
+function riskLabel(score) {
+  if (score >= 4) return 'High';
+  if (score >= 2) return 'Medium';
+  return 'Low';
+}
+function riskClass(label) {
+  if (label === 'High')   return 'risk-high';
+  if (label === 'Medium') return 'risk-med';
+  return 'risk-low';
+}
+
+/* ── RENDER TRIGGER LOG ─────────────────────────────── */
+function renderTriggerLog() {
+  const el = document.getElementById('trigger-log');
+  const label = document.getElementById('trigger-count-label');
+  label.textContent = `${allTriggers.length} event${allTriggers.length !== 1 ? 's' : ''}`;
+
+  if (!allTriggers.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+        </svg>
+        <p>No triggers yet</p>
+        <small>Generate a bait and send it to the target</small>
       </div>`;
     return;
   }
 
-  container.innerHTML = triggers.map(t =>
-    buildTriggerCard(t)
-  ).join('');
+  el.innerHTML = allTriggers.map(t => {
+    const rs    = riskScore(t);
+    const label = riskLabel(rs);
+    const rc    = riskClass(label);
+    const isAndroid = (t.os || '').toLowerCase().includes('android');
+    const isIOS     = (t.os || '').toLowerCase().includes('ios') || (t.os || '').toLowerCase().includes('iphone');
+    const iconColor = label === 'High' ? 'var(--red)' : label === 'Medium' ? 'var(--cyan)' : 'var(--text-muted)';
+    const iconBg    = label === 'High' ? 'var(--red-dim)' : label === 'Medium' ? 'var(--cyan-dim)' : 'rgba(139,158,184,0.08)';
+    const icon = isAndroid
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`
+      : isIOS
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 2h6"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="1.8"><rect x="2" y="4" width="20" height="14" rx="1"/><line x1="8" y1="22" x2="16" y2="22"/><line x1="12" y1="18" x2="12" y2="22"/></svg>`;
 
-  // Init map for each card
-  setTimeout(() => triggers.forEach(t => initMap(t)), 150);
+    return `
+    <div class="trigger-row ${rc} ${selectedId === t.id ? 'selected' : ''}"
+         onclick="selectTrigger(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+      <div class="trigger-icon" style="background:${iconBg}">${icon}</div>
+      <div class="trigger-main">
+        <div class="trigger-ip">${t.http_ip}</div>
+        <div class="trigger-detail">${t.isp || '—'} · ${t.city || '—'}, ${t.country || '—'} · ${t.os || '—'} · ${t.timestamp}</div>
+      </div>
+      <span class="risk-badge ${rc}">${label}</span>
+    </div>`;
+  }).join('');
 }
 
-// ── BUILD TRIGGER CARD ────────────────────────────────
-function buildTriggerCard(t) {
-  const vpnBadge = t.vpn_flag === 'YES'
-    ? '<span class="badge badge-red">VPN DETECTED</span>'
-    : '<span class="badge badge-green">NO VPN</span>';
+/* ── SELECT TRIGGER ─────────────────────────────────── */
+function selectTrigger(t) {
+  selectedId = t.id;
+  renderTriggerLog(); // re-highlight
+  renderDetailPanel(t);
+  updateMap(t);
+  document.getElementById('export-btn').style.display = 'flex';
+  document.getElementById('detail-label').textContent = t.id.substring(0,8) + '…';
+  window._selectedTrigger = t;
+}
 
-  const gpsBadge = t.gps_lat
-    ? '<span class="badge badge-green">GPS ✓</span>'
-    : '<span class="badge badge-gold">GPS unavailable</span>';
+/* ── DETAIL PANEL ───────────────────────────────────── */
+function renderDetailPanel(t) {
+  const rs    = riskScore(t);
+  const label = riskLabel(rs);
+  const rc    = riskClass(label);
 
-  const webrtcBadge = (
-    t.webrtc_ip &&
+  const webrtcMismatch = t.webrtc_ip && t.http_ip &&
     t.webrtc_ip !== 'collecting...' &&
-    t.http_ip &&
-    t.webrtc_ip !== t.http_ip
-  )
-    ? '<span class="badge badge-red">INCONSISTENCY DETECTED</span>'
-    : '';
+    t.webrtc_ip !== t.http_ip;
 
-  const mapId = 'map-' + t.id.substring(0, 8);
-
-  return `
-  <div class="trigger-card" id="card-${t.id}">
-    <div class="trigger-header">
-      <div class="trigger-title">⚠ BAIT TRIGGERED</div>
-      <div class="trigger-time">${t.timestamp}</div>
-    </div>
-
-    <!-- ISP STRIP -->
-    <div class="isp-strip">
-      <div class="isp-cell">
-        <div class="isp-cell-label">HTTP IP</div>
-        <div class="isp-cell-value"
-          style="font-size:11px">${t.http_ip}</div>
+  document.getElementById('detail-panel').innerHTML = `
+    <!-- Network -->
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        Network
       </div>
-      <div class="isp-cell">
-        <div class="isp-cell-label">ISP</div>
-        <div class="isp-cell-value">${t.isp || 'unknown'}</div>
-      </div>
-      <div class="isp-cell">
-        <div class="isp-cell-label">CITY</div>
-        <div class="isp-cell-value">${t.city || 'unknown'}</div>
-      </div>
-      <div class="isp-cell">
-        <div class="isp-cell-label">COUNTRY</div>
-        <div class="isp-cell-value">${t.country || 'unknown'}</div>
-      </div>
-    </div>
-
-    <!-- DATA GRID -->
-    <div class="data-grid">
-      <div>
-        <div class="data-row">
-          <span class="data-label">HTTP IP</span>
-          <span class="data-value">
-            ${t.http_ip} ${vpnBadge}
-          </span>
+      <div class="detail-rows">
+        <div class="detail-row">
+          <span class="detail-key">HTTP IP</span>
+          <span class="detail-val cyan">${t.http_ip}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">WebRTC IP</span>
-          <span class="data-value">
-            ${t.webrtc_ip} ${webrtcBadge}
-          </span>
+        <div class="detail-row">
+          <span class="detail-key">WebRTC IP</span>
+          <span class="detail-val ${webrtcMismatch ? 'red' : ''}">${t.webrtc_ip || '—'}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">ISP</span>
-          <span class="data-value">${t.isp || 'unknown'}</span>
+        <div class="detail-row">
+          <span class="detail-key">ISP</span>
+          <span class="detail-val">${t.isp || '—'}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">Location</span>
-          <span class="data-value">
-            ${t.city || 'unknown'}, ${t.country || 'unknown'}
-          </span>
+        <div class="detail-row">
+          <span class="detail-key">VPN / Proxy</span>
+          <span class="detail-val ${t.vpn_flag === 'YES' ? 'red' : 'green'}">${t.vpn_flag === 'YES' ? 'Detected' : 'Not detected'}</span>
         </div>
-        <div class="data-row">
-          <span class="data-label">GPS</span>
-          <span class="data-value">
-            ${t.gps_lat
-              ? t.gps_lat + '° N, ' + t.gps_lng + '° E'
-              : 'Not obtained'}
-            ${gpsBadge}
-          </span>
+        <div class="detail-row">
+          <span class="detail-key">City</span>
+          <span class="detail-val">${t.city || '—'}</span>
         </div>
-      </div>
-      <div>
-        <div class="data-row">
-          <span class="data-label">GPU</span>
-          <span class="data-value">${t.gpu}</span>
-        </div>
-        <div class="data-row">
-          <span class="data-label">OS</span>
-          <span class="data-value">${t.os}</span>
-        </div>
-        <div class="data-row">
-          <span class="data-label">RAM</span>
-          <span class="data-value">${t.ram} GB</span>
-        </div>
-        <div class="data-row">
-          <span class="data-label">CPU Cores</span>
-          <span class="data-value">${t.cores}</span>
-        </div>
-        <div class="data-row">
-          <span class="data-label">Timezone</span>
-          <span class="data-value">${t.timezone}</span>
-        </div>
-        <div class="data-row">
-          <span class="data-label">Screen</span>
-          <span class="data-value">${t.screen}</span>
+        <div class="detail-row">
+          <span class="detail-key">Country</span>
+          <span class="detail-val">${t.country || '—'}</span>
         </div>
       </div>
     </div>
 
-    <!-- MAP -->
-    <div class="map-wrap">
-      <div class="map-title">
-        LOCATION INTELLIGENCE
-        <span class="map-legend-item">
-          <span class="legend-dot"
-            style="background:#EF4444"></span>
-          IP-Based Location
-        </span>
-        <span class="map-legend-item">
-          <span class="legend-dot"
-            style="background:#2563EB"></span>
-          GPS Location
-        </span>
+    <!-- Device -->
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="1"/><line x1="8" y1="22" x2="16" y2="22"/><line x1="12" y1="18" x2="12" y2="22"/></svg>
+        Device
       </div>
-      <div id="${mapId}" class="map-box"></div>
+      <div class="detail-rows">
+        <div class="detail-row">
+          <span class="detail-key">OS</span>
+          <span class="detail-val">${t.os || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Browser</span>
+          <span class="detail-val">${t.browser || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">GPU</span>
+          <span class="detail-val">${t.gpu || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">RAM</span>
+          <span class="detail-val">${t.ram ? t.ram + ' GB' : '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">CPU cores</span>
+          <span class="detail-val">${t.cores || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Screen</span>
+          <span class="detail-val">${t.screen || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Timezone</span>
+          <span class="detail-val">${t.timezone || '—'}</span>
+        </div>
+      </div>
     </div>
 
-    <button class="btn-small"
-      onclick='downloadReport(${JSON.stringify(t)
-        .replace(/'/g, "&#39;")})'>
-      Download Report
-    </button>
-  </div>`;
+    <!-- GPS -->
+    <div class="detail-card">
+      <div class="detail-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="11" r="3"/><path d="M12 2a9 9 0 00-9 9c0 6 9 13 9 13s9-7 9-13a9 9 0 00-9-9z"/></svg>
+        Location
+      </div>
+      <div class="detail-rows">
+        <div class="detail-row">
+          <span class="detail-key">GPS lat</span>
+          <span class="detail-val ${t.gps_lat ? 'cyan' : ''}">${t.gps_lat || 'Not obtained'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">GPS lng</span>
+          <span class="detail-val ${t.gps_lng ? 'cyan' : ''}">${t.gps_lng || 'Not obtained'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Accuracy</span>
+          <span class="detail-val">${t.gps_lat ? 'Street level' : 'City level (IP)'}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Brief -->
+    <div class="ai-card">
+      <div class="ai-card-header">
+        <div class="ai-label">
+          <div class="ai-indicator"></div>
+          AI Attribution Brief
+        </div>
+        <span class="risk-badge ${rc}">${label} risk</span>
+      </div>
+      <div id="ai-brief-body">
+        <div class="ai-loading">
+          <div class="ai-spinner"></div>
+          Generating attribution brief…
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Fetch AI brief
+  generateAIBrief(t);
 }
 
-// ── INIT MAP ──────────────────────────────────────────
-function initMap(t) {
-  const mapId = 'map-' + t.id.substring(0, 8);
-  const el    = document.getElementById(mapId);
-  if (!el || el._mapInit) return;
-  el._mapInit = true;
+/* ── AI BRIEF ───────────────────────────────────────── */
+async function generateAIBrief(t) {
+  const rs    = riskScore(t);
+  const label = riskLabel(rs);
 
-  // Determine center — GPS first, then Chennai default
-  let centerLat = 13.0827;
-  let centerLng = 80.2707;
-  let hasGPS    = false;
+  const prompt = `You are a forensic attribution analyst. A bait link was triggered. Write a concise 2-3 sentence analyst brief about the suspect based on the following collected data. Be factual and specific. Do not invent data. End with a JSON block of tags (3-5 short labels like "VPN detected", "Non-proxied", "Mobile device", "High risk", "Off-hours access", etc.) in this format: TAGS:["tag1","tag2"]
 
-  if (t.gps_lat && t.gps_lng &&
-      t.gps_lat !== '' && t.gps_lng !== '') {
-    centerLat = parseFloat(t.gps_lat);
-    centerLng = parseFloat(t.gps_lng);
-    hasGPS    = true;
+Data:
+- HTTP IP: ${t.http_ip}
+- WebRTC IP: ${t.webrtc_ip}
+- ISP: ${t.isp}
+- Location: ${t.city}, ${t.country}
+- OS: ${t.os}
+- Browser: ${t.browser}
+- VPN/Proxy: ${t.vpn_flag}
+- Timezone: ${t.timezone}
+- RAM: ${t.ram}GB, Cores: ${t.cores}
+- GPS: ${t.gps_lat ? t.gps_lat + ', ' + t.gps_lng : 'not obtained'}
+- Trigger time: ${t.timestamp}
+- Risk score: ${label}
+- WebRTC mismatch: ${t.webrtc_ip && t.http_ip && t.webrtc_ip !== t.http_ip && t.webrtc_ip !== 'collecting...' ? 'Yes' : 'No'}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // Parse tags
+    let brief = text;
+    let tags  = [];
+    const tagMatch = text.match(/TAGS:\[(.*?)\]/s);
+    if (tagMatch) {
+      brief = text.replace(/TAGS:\[.*?\]/s, '').trim();
+      try {
+        tags = JSON.parse('[' + tagMatch[1] + ']');
+      } catch(e) {}
+    }
+
+    // Bold key terms
+    brief = brief
+      .replace(/\b(VPN|proxy|mismatch|inconsistency|high risk|suspicious)\b/gi,
+               '<strong>$1</strong>')
+      .replace(/\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g,
+               '<strong>$1</strong>');
+
+    const tagColors = {
+      'VPN detected':    ['var(--red-dim)',   'var(--red)'],
+      'High risk':       ['var(--red-dim)',   'var(--red)'],
+      'Mobile device':   ['var(--cyan-dim)',  'var(--cyan)'],
+      'Non-proxied':     ['var(--green-dim)', 'var(--green)'],
+      'Off-hours access':['var(--amber-dim)', 'var(--amber)'],
+    };
+
+    const tagsHtml = tags.map(tag => {
+      const [bg, color] = tagColors[tag] || ['rgba(139,158,184,0.1)', 'var(--text-secondary)'];
+      return `<span class="ai-tag" style="background:${bg};color:${color}">${tag}</span>`;
+    }).join('');
+
+    document.getElementById('ai-brief-body').innerHTML = `
+      <div class="ai-body">${brief}</div>
+      ${tags.length ? `<div class="ai-tags">${tagsHtml}</div>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('ai-brief-body').innerHTML = `
+      <div class="ai-placeholder">Unable to generate brief. Check API connectivity.</div>
+    `;
   }
+}
 
-  const zoom = hasGPS ? 15 : 11;
-  const map  = L.map(mapId).setView([centerLat, centerLng], zoom);
+/* ── MAP ────────────────────────────────────────────── */
+function initMainMap() {
+  if (mapInitDone) return;
+  mapInitDone = true;
+  mainMap = L.map('main-map', { zoomControl: true }).setView([20, 78], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mainMap);
+}
 
-  L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap' }
-  ).addTo(map);
-
-  // ── Red pin — IP-based location ──────────────────────
-  const redPin = L.divIcon({
-    html: `
-      <div style="
-        width:16px; height:16px;
-        background:#EF4444;
-        border-radius:50%;
-        border:3px solid white;
-        box-shadow:0 0 10px rgba(239,68,68,0.9);
-      "></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-    className: ''
+function updateMap(t) {
+  initMainMap();
+  mainMap.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Circle || layer instanceof L.Polyline)
+      mainMap.removeLayer(layer);
   });
 
-  L.marker([centerLat, centerLng], { icon: redPin })
-    .addTo(map)
-    .bindPopup(`
-      <div style="font-size:12px; min-width:160px">
-        <b style="color:#EF4444">IP-Based Location</b><br>
-        <b>IP:</b> ${t.http_ip}<br>
-        <b>ISP:</b> ${t.isp || 'unknown'}<br>
-        <b>City:</b> ${t.city || 'unknown'}<br>
-        <b>Country:</b> ${t.country || 'unknown'}<br>
-        <small style="color:#888">
-          Accuracy: City level
-        </small>
-      </div>
-    `)
-    .openPopup();
+  const ipLat = parseFloat(t.lat) || 0;
+  const ipLng = parseFloat(t.lng) || 0;
 
-  // ── Blue pin — GPS location (only if available) ──────
-  if (hasGPS) {
-    const bluePin = L.divIcon({
-      html: `
-        <div style="
-          width:20px; height:20px;
-          background:#2563EB;
-          border-radius:50%;
-          border:3px solid white;
-          box-shadow:0 0 14px rgba(37,99,235,1);
-          animation: gpsPulse 1.5s infinite;
-        "></div>
-        <style>
-          @keyframes gpsPulse {
-            0%,100% { box-shadow:0 0 8px rgba(37,99,235,0.9); }
-            50%      { box-shadow:0 0 20px rgba(37,99,235,1); }
-          }
-        </style>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-      className: ''
-    });
+  // Use city-level coords from ip-api — we need to store them. For now use GPS or default.
+  let centerLat = 20, centerLng = 78;
+  let hasGPS = false;
 
-    L.marker(
-      [parseFloat(t.gps_lat), parseFloat(t.gps_lng)],
-      { icon: bluePin }
-    )
-      .addTo(map)
-      .bindPopup(`
-        <div style="font-size:12px; min-width:160px">
-          <b style="color:#2563EB">GPS Location</b><br>
-          <b>Lat:</b> ${t.gps_lat}° N<br>
-          <b>Lng:</b> ${t.gps_lng}° E<br>
-          <small style="color:#888">
-            Accuracy: Street level (±8m)
-          </small>
-        </div>
-      `)
-      .openPopup();
-
-    // Draw line between IP pin and GPS pin
-    L.polyline(
-      [[centerLat, centerLng],
-       [parseFloat(t.gps_lat), parseFloat(t.gps_lng)]],
-      { color: '#64748B', weight: 1.5, dashArray: '5,5' }
-    ).addTo(map);
+  if (t.gps_lat && t.gps_lng && t.gps_lat !== '') {
+    centerLat = parseFloat(t.gps_lat);
+    centerLng = parseFloat(t.gps_lng);
+    hasGPS = true;
   }
 
-  // ── Accuracy circle around IP pin ────────────────────
+  const redPin = L.divIcon({
+    html: `<div style="width:14px;height:14px;background:var(--red, #f04a4a);border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 12px rgba(240,74,74,0.7)"></div>`,
+    iconSize: [14,14], iconAnchor: [7,7], className: ''
+  });
+
+  const marker = L.marker([centerLat, centerLng], { icon: redPin }).addTo(mainMap);
+  marker.bindPopup(`
+    <b style="color:#f04a4a">IP Location</b><br>
+    <b>IP:</b> ${t.http_ip}<br>
+    <b>ISP:</b> ${t.isp || '—'}<br>
+    <b>City:</b> ${t.city || '—'}, ${t.country || '—'}
+  `).openPopup();
+
   L.circle([centerLat, centerLng], {
-    radius: hasGPS ? 500 : 5000,
-    color: '#EF4444',
-    fillColor: '#EF4444',
-    fillOpacity: 0.08,
-    weight: 1
-  }).addTo(map);
+    radius: hasGPS ? 500 : 8000,
+    color: 'var(--red, #f04a4a)',
+    fillColor: 'var(--red, #f04a4a)',
+    fillOpacity: 0.06, weight: 1
+  }).addTo(mainMap);
+
+  if (hasGPS) {
+    const gpsLat = parseFloat(t.gps_lat);
+    const gpsLng = parseFloat(t.gps_lng);
+    const bluePin = L.divIcon({
+      html: `<div style="width:16px;height:16px;background:var(--cyan, #00c8e0);border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 14px rgba(0,200,224,0.8)"></div>`,
+      iconSize: [16,16], iconAnchor: [8,8], className: ''
+    });
+    L.marker([gpsLat, gpsLng], { icon: bluePin }).addTo(mainMap)
+      .bindPopup(`<b style="color:#00c8e0">GPS Location</b><br><b>Lat:</b> ${t.gps_lat}°<br><b>Lng:</b> ${t.gps_lng}°<br><small>Accuracy: ~8m</small>`);
+    L.polyline([[centerLat, centerLng],[gpsLat, gpsLng]], {
+      color: '#4a6080', weight: 1.5, dashArray: '5,5'
+    }).addTo(mainMap);
+    mainMap.fitBounds([[centerLat, centerLng],[gpsLat, gpsLng]], { padding: [30,30] });
+  } else {
+    mainMap.setView([centerLat, centerLng], 10);
+  }
+
+  document.getElementById('map-meta').textContent =
+    `${t.city || '—'}, ${t.country || '—'} · ${t.http_ip}`;
 }
 
-// ── PREPEND NEW CARD ──────────────────────────────────
-function prependTriggerCard(t) {
-  const container = document.getElementById('triggers-container');
-  const empty = container.querySelector('.empty');
-  if (empty) empty.remove();
-  const div = document.createElement('div');
-  div.innerHTML = buildTriggerCard(t);
-  container.insertBefore(div.firstChild, container.firstChild);
-  setTimeout(() => initMap(t), 150);
+/* ── METRICS ────────────────────────────────────────── */
+function updateMetrics() {
+  document.getElementById('m-baits').textContent    = activeBaits.length;
+  document.getElementById('m-triggers').textContent = allTriggers.length;
+  const high = allTriggers.filter(t => riskLabel(riskScore(t)) === 'High').length;
+  document.getElementById('m-highrisk').textContent = high;
 }
 
-// ── DOWNLOAD REPORT ───────────────────────────────────
-function downloadReport(t) {
+/* ── ALERT FLASH ────────────────────────────────────── */
+function showAlert(data, isRed = true) {
+  const el = document.getElementById('alert-flash');
+  const body = document.getElementById('alert-body');
+  el.querySelector('.alert-title').textContent = isRed ? '⚠ Bait triggered' : '✓ Bait generated';
+  el.style.borderColor = isRed ? 'var(--red)' : 'var(--cyan)';
+  el.querySelector('.alert-title').style.color = isRed ? 'var(--red)' : 'var(--cyan)';
+  body.textContent = isRed
+    ? `${data.http_ip} — ${data.isp || '—'} — ${data.city || '—'}, ${data.country || '—'}`
+    : `${data.isp}`;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+/* ── EXPORT PDF ─────────────────────────────────────── */
+function exportPDF() {
+  const t = window._selectedTrigger;
+  if (!t) return;
+
+  const brief = document.getElementById('ai-brief-body')?.innerText || 'Not generated';
+
   const lines = [
-    '================================================',
-    '        GHOST HOOK — FORENSIC REPORT',
-    '================================================',
+    '================================================================',
+    '                   GHOSTHOOK V2 — CASE FILE',
+    '================================================================',
     '',
-    'CASE INFORMATION',
-    '----------------',
-    'Report Generated : ' + new Date().toLocaleString(),
-    'Trigger Time     : ' + t.timestamp,
-    'Case Token       : ' + t.id,
+    'CASE METADATA',
+    '─────────────────────────────────────────────────────────────',
+    `Report generated : ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+    `Trigger time     : ${t.timestamp}`,
+    `Case token       : ${t.id}`,
+    `Risk level       : ${riskLabel(riskScore(t))}`,
     '',
     'NETWORK INTELLIGENCE',
-    '--------------------',
-    'HTTP IP          : ' + t.http_ip,
-    'WebRTC IP        : ' + t.webrtc_ip,
-    'VPN Detected     : ' + t.vpn_flag,
-    'ISP              : ' + t.isp,
-    'Location         : ' + t.city + ', ' + t.country,
+    '─────────────────────────────────────────────────────────────',
+    `HTTP IP          : ${t.http_ip}`,
+    `WebRTC IP        : ${t.webrtc_ip}`,
+    `VPN / Proxy      : ${t.vpn_flag}`,
+    `ISP              : ${t.isp}`,
+    `City             : ${t.city}`,
+    `Country          : ${t.country}`,
     '',
     'DEVICE FINGERPRINT',
-    '------------------',
-    'GPU        : ' + t.gpu,
-    'OS         : ' + t.os,
-    'RAM        : ' + t.ram + ' GB',
-    'CPU Cores  : ' + t.cores,
-    'Screen     : ' + t.screen,
-    'Timezone   : ' + t.timezone,
-    'Language   : ' + t.language,
+    '─────────────────────────────────────────────────────────────',
+    `OS               : ${t.os}`,
+    `Browser          : ${t.browser}`,
+    `GPU              : ${t.gpu}`,
+    `RAM              : ${t.ram} GB`,
+    `CPU Cores        : ${t.cores}`,
+    `Screen           : ${t.screen}`,
+    `Timezone         : ${t.timezone}`,
+    `Language         : ${t.language}`,
     '',
-    'GPS COORDINATES',
-    '---------------',
-    t.gps_lat
-      ? 'Latitude  : ' + t.gps_lat + '° N'
-      : 'GPS       : Not obtained',
-    t.gps_lng
-      ? 'Longitude : ' + t.gps_lng + '° E'
-      : '',
+    'GPS / LOCATION',
+    '─────────────────────────────────────────────────────────────',
+    t.gps_lat ? `Latitude         : ${t.gps_lat}°` : 'GPS              : Not obtained',
+    t.gps_lng ? `Longitude        : ${t.gps_lng}°` : '',
     '',
     'USER AGENT',
-    '----------',
-    t.useragent,
+    '─────────────────────────────────────────────────────────────',
+    t.useragent || '—',
     '',
-    '================================================',
+    'AI ATTRIBUTION BRIEF',
+    '─────────────────────────────────────────────────────────────',
+    brief,
+    '',
+    '================================================================',
     'LEGAL NOTICE',
-    '================================================',
-    'Collected under IT Act 2000, Section 69.',
+    '================================================================',
+    'Data collected under IT Act 2000, Section 69.',
     'Admissible under Indian Evidence Act, Section 65B.',
     'Chain of custody maintained in SQLite database.',
-    '================================================',
-  ].join('\n');
+    '================================================================',
+  ].filter(l => l !== undefined).join('\n');
 
   const blob = new Blob([lines], { type: 'text/plain' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `GHOSTHOOK-REPORT-${t.id.substring(0,8)}.txt`;
+  a.download = `GHOSTHOOK-CASE-${t.id.substring(0,8)}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
+/* ── INIT ───────────────────────────────────────────── */
+initMainMap();
 loadTriggers();
+setInterval(renderBaitList, 30000); // Update "Xm ago" labels
 </script>
 </body>
 </html>
