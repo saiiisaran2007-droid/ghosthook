@@ -64,8 +64,8 @@ app.post('/api/collect/:token', async (req, res) => {
     timeZone: 'Asia/Kolkata'
   });
 
-  const httpIp = req.headers['x-forwarded-for'] ||
-                 req.socket.remoteAddress || 'unknown';
+  const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+const httpIp = rawIp.split(',')[0].trim();
 
   // Get ISP + city from ip-api
   let isp     = 'unknown';
