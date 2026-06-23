@@ -1175,60 +1175,67 @@ function updateMap(t) {
       mainMap.removeLayer(layer);
   });
 
-  const ipLat = parseFloat(t.lat) || 0;
-  const ipLng = parseFloat(t.lng) || 0;
-
-  // Use city-level coords from ip-api — we need to store them. For now use GPS or default.
-  let centerLat = 20, centerLng = 78;
-  let hasGPS = false;
-
-  if (t.gps_lat && t.gps_lng && t.gps_lat !== '') {
-    centerLat = parseFloat(t.gps_lat);
-    centerLng = parseFloat(t.gps_lng);
-    hasGPS = true;
-  }
+  // Use IP-based coords from ip-api, fall back to world center
+  let centerLat = t.lat ? parseFloat(t.lat) : 20;
+  let centerLng = t.lon ? parseFloat(t.lon) : 78;
+  let hasCoords = !!(t.lat && t.lon);
+  let hasGPS    = !!(t.gps_lat && t.gps_lng && t.gps_lat !== '');
 
   const redPin = L.divIcon({
     html: `<div style="width:14px;height:14px;background:var(--red, #f04a4a);border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 12px rgba(240,74,74,0.7)"></div>`,
     iconSize: [14,14], iconAnchor: [7,7], className: ''
   });
 
-  const marker = L.marker([centerLat, centerLng], { icon: redPin }).addTo(mainMap);
-  marker.bindPopup(`
-    <b style="color:#f04a4a">IP Location</b><br>
-    <b>IP:</b> ${t.http_ip}<br>
-    <b>ISP:</b> ${t.isp || '—'}<br>
-    <b>City:</b> ${t.city || '—'}, ${t.country || '—'}
-  `).openPopup();
+  if (hasCoords) {
+    const marker = L.marker([centerLat, centerLng], { icon: redPin }).addTo(mainMap);
+    marker.bindPopup(`
+      <b style="color:#f04a4a">IP Location</b><br>
+      <b>IP:</b> ${t.http_ip}<br>
+      <b>ISP:</b> ${t.isp || '—'}<br>
+      <b>City:</b> ${t.city || '—'}, ${t.country || '—'}
+    `).openPopup();
 
-  L.circle([centerLat, centerLng], {
-    radius: hasGPS ? 500 : 8000,
-    color: 'var(--red, #f04a4a)',
-    fillColor: 'var(--red, #f04a4a)',
-    fillOpacity: 0.06, weight: 1
-  }).addTo(mainMap);
+    L.circle([centerLat, centerLng], {
+      radius: hasGPS ? 500 : 8000,
+      color: '#f04a4a',
+      fillColor: '#f04a4a',
+      fillOpacity: 0.06,
+      weight: 1
+    }).addTo(mainMap);
+  }
 
   if (hasGPS) {
     const gpsLat = parseFloat(t.gps_lat);
     const gpsLng = parseFloat(t.gps_lng);
     const bluePin = L.divIcon({
-      html: `<div style="width:16px;height:16px;background:var(--cyan, #00c8e0);border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 14px rgba(0,200,224,0.8)"></div>`,
+      html: `<div style="width:16px;height:16px;background:#00c8e0;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 14px rgba(0,200,224,0.8)"></div>`,
       iconSize: [16,16], iconAnchor: [8,8], className: ''
     });
     L.marker([gpsLat, gpsLng], { icon: bluePin }).addTo(mainMap)
-      .bindPopup(`<b style="color:#00c8e0">GPS Location</b><br><b>Lat:</b> ${t.gps_lat}°<br><b>Lng:</b> ${t.gps_lng}°<br><small>Accuracy: ~8m</small>`);
-    L.polyline([[centerLat, centerLng],[gpsLat, gpsLng]], {
-      color: '#4a6080', weight: 1.5, dashArray: '5,5'
-    }).addTo(mainMap);
-    mainMap.fitBounds([[centerLat, centerLng],[gpsLat, gpsLng]], { padding: [30,30] });
-  } else {
-    mainMap.setView([centerLat, centerLng], 10);
+      .bindPopup(`
+        <b style="color:#00c8e0">GPS Location</b><br>
+        <b>Lat:</b> ${t.gps_lat}°<br>
+        <b>Lng:</b> ${t.gps_lng}°<br>
+        <small>Accuracy: ~8m</small>
+      `);
+    if (hasCoords) {
+      L.polyline([[centerLat, centerLng],[gpsLat, gpsLng]], {
+        color: '#4a6080', weight: 1.5, dashArray: '5,5'
+      }).addTo(mainMap);
+      mainMap.fitBounds([[centerLat, centerLng],[gpsLat, gpsLng]], { padding: [30,30] });
+    } else {
+      mainMap.setView([gpsLat, gpsLng], 14);
+    }
+  } else if (hasCoords) {
+    mainMap.setView([centerLat, centerLng], 11);
   }
 
   document.getElementById('map-meta').textContent =
-    `${t.city || '—'}, ${t.country || '—'} · ${t.http_ip}`;
+    hasCoords
+      ? `${t.city || '—'}, ${t.country || '—'} · ${t.http_ip}`
+      : 'Location unavailable';
 }
-
+  
 /* ── METRICS ────────────────────────────────────────── */
 function updateMetrics() {
   document.getElementById('m-baits').textContent    = activeBaits.length;
