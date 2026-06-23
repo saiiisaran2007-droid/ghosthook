@@ -12,6 +12,9 @@ const io     = new Server(server, { cors: { origin: "*" } });
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+app.get('/', (req, res) => {
+  res.redirect('/dashboard.html');
+});
 
 // ── DATABASE ──────────────────────────────────────────
 const db = new sqlite3.Database('./ghost.db');
@@ -166,7 +169,7 @@ app.get('/api/triggers', (req, res) => {
 });
 
 // ── START ─────────────────────────────────────────────
-server.listen(3000, () => {
+server.listen(process.env.PORT || 3000, () => {
   console.log('');
   console.log('  GHOST HOOK — Team CyberGhost');
   console.log('  Server    → http://localhost:3000');
