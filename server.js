@@ -43,7 +43,7 @@ app.get('/api/generate', (req, res) => {
   const token = uuidv4();
   res.json({
     token: token,
-    url: `https://swashingly-ribbonlike-wilbur.ngrok-free.dev/bait/${token}`
+   url: `${process.env.BASE_URL || 'http://localhost:3000'}/bait/${token}`
   });
 });
 
